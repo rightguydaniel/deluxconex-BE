@@ -1,28 +1,43 @@
-# name: Deploy Node.js Backend
+name: Deploy Node.js Backend
 
-# on:
-#   push:
-#     branches: [master]
+on:
+  push:
+    branches: [master]
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v3
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       
-#       - name: Build Project
-#         run: |
-#           npm install
-#           npm run build
+      - name: Build Project
+        run: |
+          npm install
+          npm run build
           
-#       - name: Deploy via SSH
-#         uses: appleboy/ssh-action@v1
-#         with:
-#           host: ${{ secrets.SSH_HOST }}
-#           username: ${{ secrets.SSH_USERNAME }}
-#           port: 21098
-#           key: ${{ secrets.SSH_PRIVATE_KEY }}
-#           script: |
-#             rm -rf /home/elitfigj/api.deluxconex.com/*
-#             cp -a dist/. /home/elitfigj/api.deluxconex.com/
-#             chown -R elitfigj:elitfigj /home/elitfigj/api.deluxconex.com
+      - name: Deploy and Restart via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          port: 21098
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "➡️ Changing to project directory..."
+            cd /home/elitfigj/api.deluxconex.com
+            
+            echo "🔄 Pulling latest changes..."
+            git pull origin master
+            
+            echo "📦 Installing dependencies..."
+            npm install --production
+            
+            echo "🏗️ Rebuilding application..."
+            npm run build
+            
+            echo "🔄 Restarting Node.js application..."
+            # For cPanel-managed apps
+            /usr/local/bin/node /usr/local/cpanel/bin/node-app restart /home/elitfigj/api.deluxconex.com
+            
+            echo "✅ Deployment and restart complete!"
+            echo "🕒 Last deployed: $(date)"

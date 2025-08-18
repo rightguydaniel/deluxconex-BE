@@ -5,7 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "start": "node dist/app.js",
-    "dev": "nodemon dist/app.ts",
+    "dev": "nodemon dist/app.js",
     "build": "tsc",
     "compile": "tsc -w",
     "lint": "eslint . --ext .js,.mjs,.cjs,.ts,.tsx"
