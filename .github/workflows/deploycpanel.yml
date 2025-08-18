@@ -14,7 +14,13 @@ jobs:
         run: |
           npm install
           npm run build
-          
+
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+
       - name: Deploy and Restart via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -25,19 +31,19 @@ jobs:
           script: |
             echo "➡️ Changing to project directory..."
             cd /home/elitfigj/api.deluxconex.com
-            
+
             echo "🔄 Pulling latest changes..."
             git pull origin master
-            
+
             echo "📦 Installing dependencies..."
             npm install --production
-            
+
             echo "🏗️ Rebuilding application..."
             npm run build
-            
+
             echo "🔄 Restarting Node.js application..."
             # For cPanel-managed apps
             /usr/local/bin/node /usr/local/cpanel/bin/node-app restart /home/elitfigj/api.deluxconex.com
-            
+
             echo "✅ Deployment and restart complete!"
             echo "🕒 Last deployed: $(date)"
