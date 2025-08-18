@@ -38,7 +38,7 @@ jobs:
 
             echo "🔄 Restarting Node.js application..."
             # For cPanel-managed apps
-            /usr/local/bin/node /usr/local/cpanel/bin/node-app restart /home/elitfigj/api.deluxconex.com
+            /home/elitfigj/.nvm/versions/node/v22.18.0/bin/node /usr/local/cpanel/bin/node-app restart /home/elitfigj/api.deluxconex.com
 
             echo "✅ Deployment and restart complete!"
             echo "🕒 Last deployed: $(date)"
