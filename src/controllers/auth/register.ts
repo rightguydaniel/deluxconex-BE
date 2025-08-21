@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
 import Users, { UsersRole } from "../../models/users";
-import { generateToken } from "../../utils/token";
 import { sendEmail } from "../../configs/email/emailConfig";
 import sendResponse from "../../utils/sendResponse";
 
