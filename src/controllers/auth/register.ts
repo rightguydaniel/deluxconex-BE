@@ -37,7 +37,7 @@ export const register = async (request: Request, response: Response) => {
     return;
   } catch (error: any) {
     console.error("Registration error:", error.message);
-    sendResponse(response, 500, "Internal server error");
+    sendResponse(response, 500, "Internal server error", error.message);
     return;
   }
 };

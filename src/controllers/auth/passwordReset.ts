@@ -98,7 +98,7 @@ export const resetPassword = async (request: Request, response: Response) => {
     return;
   } catch (error: any) {
     console.error("Password reset error:", error);
-    sendResponse(response, 500, "Internal server error");
+    sendResponse(response, 500, "Internal server error", error.message);
     return;
   }
 };
