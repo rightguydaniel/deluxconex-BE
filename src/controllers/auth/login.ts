@@ -38,6 +38,7 @@ export const login = async (request: Request, response: Response) => {
         full_name: user.full_name,
         email: user.email,
         role: user.role,
+        phone:user.phone
       },
       token,
     });
