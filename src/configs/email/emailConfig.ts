@@ -4,11 +4,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: `${process.env.MAIL_HOST}`,
+  host: "deluxconex.com",
   port: 465,
   auth: {
-    user: `${process.env.MAIL_USERNAME}`,
-    pass: `${process.env.MAIL_PASSWORD}`,
+    user: "no-reply@deluxconex.com",
+    pass: "JM$F2Me-yeXv",
   },
 });
 
