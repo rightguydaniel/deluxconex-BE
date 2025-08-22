@@ -4,20 +4,12 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST,
-  port: Number(process.env.MAIL_PORT),
-  secure: true, // true for port 465
+  host: `${process.env.MAIL_HOST}`,
+  port: 465,
   auth: {
-    user: process.env.MAIL_USERNAME,
-    pass: process.env.MAIL_PASSWORD,
+    user: `${process.env.MAIL_USERNAME}`,
+    pass: `${process.env.MAIL_PASSWORD}`,
   },
-  tls: {
-    rejectUnauthorized: false, // This is the key fix for cPanel
-    minVersion: "TLSv1.2", // Force TLS version
-  },
-  socketTimeout: 10000, // Add timeouts
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
 });
 
 export const sendEmail = async (
