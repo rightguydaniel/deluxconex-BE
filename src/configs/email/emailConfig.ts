@@ -1,18 +1,30 @@
 import nodemailer from "nodemailer";
-import dotenv from "dotenv";
 
-dotenv.config();
+// cPanel-specific environment variable handling
+const getEnv = (key: string, defaultValue?: string): string => {
+  if (process.env[key]) return process.env[key] as string;
+
+  const fallbacks: { [key: string]: string } = {
+    MAIL_HOST: "deluxconex.com",
+    MAIL_PORT: "465",
+    MAIL_USERNAME: "no-reply@deluxconex.com",
+    MAIL_PASSWORD: "JM$F2Me-yeXv",
+    MAIL_FROM_NAME: "DeluxConex",
+  };
+
+  return defaultValue || fallbacks[key] || "";
+};
 
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST || "deluxconex.com",
-  port: Number(process.env.MAIL_PORT) || 465,
-  secure: true, // Use SSL
+  host: getEnv("MAIL_HOST"),
+  port: Number(getEnv("MAIL_PORT")),
+  secure: true,
   auth: {
-    user: process.env.MAIL_USERNAME || "no-reply@deluxconex.com",
-    pass: process.env.MAIL_PASSWORD || "JM$F2Me-yeXv",
+    user: getEnv("MAIL_USERNAME"),
+    pass: getEnv("MAIL_PASSWORD"),
   },
   tls: {
-    rejectUnauthorized: false, // ← THIS IS THE CRITICAL FIX
+    rejectUnauthorized: false,
   },
 });
 
@@ -23,7 +35,7 @@ export const sendEmail = async (
   html?: string
 ) => {
   const mailOptions = {
-    from: `"${process.env.MAIL_FROM_NAME || "DeluxConex"}" <${process.env.MAIL_USERNAME || "no-reply@deluxconex.com"}>`,
+    from: `"${getEnv("MAIL_FROM_NAME")}" <${getEnv("MAIL_USERNAME")}>`,
     to,
     subject,
     text: text || "",
