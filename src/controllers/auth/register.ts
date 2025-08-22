@@ -13,19 +13,19 @@ export const register = async (request: Request, response: Response) => {
       sendResponse(response, 400, "Email already in use");
       return;
     }
-    // Send welcome email
-    await sendEmail(
-      email,
-      "Welcome to Delux",
-      `Hi ${full_name}, welcome to DeluxConex`,
-      `<h1>Welcome ${full_name}</h1><p>Your account has been successfully created.</p>`
-    );
+    // // Send welcome email
+    // await sendEmail(
+    //   email,
+    //   "Welcome to Delux",
+    //   `Hi ${full_name}, welcome to DeluxConex`,
+    //   `<h1>Welcome ${full_name}</h1><p>Your account has been successfully created.</p>`
+    // );
 
     // Create user
     const user = await Users.create({
       full_name,
       user_name,
-      email:email.toLowerCase(),
+      email: email.toLowerCase(),
       phone,
       password,
       role: UsersRole.USER,

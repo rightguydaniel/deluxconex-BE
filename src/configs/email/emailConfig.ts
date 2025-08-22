@@ -1,30 +1,14 @@
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 
-// cPanel-specific environment variable handling
-const getEnv = (key: string, defaultValue?: string): string => {
-  if (process.env[key]) return process.env[key] as string;
-
-  const fallbacks: { [key: string]: string } = {
-    MAIL_HOST: "deluxconex.com",
-    MAIL_PORT: "465",
-    MAIL_USERNAME: "no-reply@deluxconex.com",
-    MAIL_PASSWORD: "JM$F2Me-yeXv",
-    MAIL_FROM_NAME: "DeluxConex",
-  };
-
-  return defaultValue || fallbacks[key] || "";
-};
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: getEnv("MAIL_HOST"),
-  port: Number(getEnv("MAIL_PORT")),
-  secure: true,
+  host: `${process.env.MAIL_HOST}`,
+  port: 465,
   auth: {
-    user: getEnv("MAIL_USERNAME"),
-    pass: getEnv("MAIL_PASSWORD"),
-  },
-  tls: {
-    rejectUnauthorized: false,
+    user: `${process.env.MAIL_USERNAME}`,
+    pass: `${process.env.MAIL_PASSWORD}`,
   },
 });
 
@@ -35,7 +19,7 @@ export const sendEmail = async (
   html?: string
 ) => {
   const mailOptions = {
-    from: `"${getEnv("MAIL_FROM_NAME")}" <${getEnv("MAIL_USERNAME")}>`,
+    from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_USERNAME}>`,
     to,
     subject,
     text: text || "",
