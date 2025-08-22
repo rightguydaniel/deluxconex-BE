@@ -31,7 +31,7 @@ jobs:
             git pull origin master
 
             echo "📦 Installing dependencies..."
-            npm install --production
+            npm install
 
             echo "🏗️ Rebuilding application..."
             npm run build
