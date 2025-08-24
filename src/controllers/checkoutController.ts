@@ -44,27 +44,15 @@ const paypalOrdersController = new OrdersController(paypalClient);
 
 export const createCheckout = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id; // Assuming you have authentication middleware
+    const userId = (req as any).user?.id;
     const { cart } = req.body;
 
     if (!userId) {
-      return sendResponse(
-        res,
-        401,
-        "Authentication required",
-        null,
-        "User not authenticated"
-      );
+      return sendResponse(res, 401, "Authentication required", null, "User not authenticated");
     }
 
     if (!cart || !cart.items || cart.items.length === 0) {
-      return sendResponse(
-        res,
-        400,
-        "Cart is empty",
-        null,
-        "Cannot checkout with empty cart"
-      );
+      return sendResponse(res, 400, "Cart is empty", null, "Cannot checkout with empty cart");
     }
 
     // Create order in database
@@ -92,9 +80,8 @@ export const createCheckout = async (req: Request, res: Response) => {
       paymentStatus: "pending",
     });
 
-    // Generate invoice number (you might want a more sophisticated system)
-    const invoiceCount = await Invoices.count();
-    const invoiceNumber = `INV-${Date.now()})`;
+    // Generate invoice number - REMOVED THE COUNT CALL
+    const invoiceNumber = `INV-${Date.now()}`;
 
     // Create invoice
     const invoice: any = await Invoices.create({
@@ -103,7 +90,7 @@ export const createCheckout = async (req: Request, res: Response) => {
       userId,
       invoiceNumber,
       issueDate: new Date(),
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       status: InvoiceStatus.DRAFT,
       subtotal: cart.subtotal,
       tax: cart.tax,
