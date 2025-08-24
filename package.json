@@ -29,6 +29,7 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.17.2",
     "@types/nodemailer": "^6.4.17",
+    "@types/paypal__checkout-server-sdk": "^1.0.8",
     "@types/sequelize": "^4.28.20",
     "@typescript-eslint/eslint-plugin": "^8.29.1",
     "@typescript-eslint/parser": "^8.29.1",
@@ -43,7 +44,10 @@
     "typescript-eslint": "^8.29.1"
   },
   "dependencies": {
+    "@paypal/paypal-server-sdk": "^1.0.0",
+    "@types/multer": "^2.0.0",
     "bcrypt": "^5.1.1",
+    "body-parser": "^2.2.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
@@ -51,9 +55,11 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "mysql2": "^3.14.0",
     "nodemailer": "^6.10.0",
     "pg": "^8.14.1",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "uuid": "^11.1.0"
   }
 }

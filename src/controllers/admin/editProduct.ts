@@ -3,14 +3,17 @@ import Products from "../../models/products";
 import { JwtPayload } from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
-import dotenv from "dotenv";
-dotenv.config();
-const API_URL = process.env.API_URL;
 
-let memoryProducts: any[] = [];
-
-export const createProduct = async (req: JwtPayload, res: Response) => {
+export const editProduct = async (req: JwtPayload, res: Response) => {
   try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        message: "Product ID is required",
+      });
+    }
+
     if (!req.body.productData) {
       return res.status(400).json({
         message: "Missing product data",
@@ -18,12 +21,9 @@ export const createProduct = async (req: JwtPayload, res: Response) => {
     }
 
     let productData;
-
-    // Check if productData is already an object (from previous parsing)
     if (typeof req.body.productData === "object") {
       productData = req.body.productData;
     } else if (typeof req.body.productData === "string") {
-      // Parse the product data from JSON string
       try {
         productData = JSON.parse(req.body.productData);
       } catch (parseError) {
@@ -64,7 +64,7 @@ export const createProduct = async (req: JwtPayload, res: Response) => {
         for (const file of productImages) {
           const fileName = `product_${Date.now()}_${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
           const filePath = path.join(uploadDir, fileName);
-          const webPath = `${API_URL}/uploads/products/${fileName}`;
+          const webPath = `/uploads/products/${fileName}`;
 
           fs.writeFileSync(filePath, file.buffer);
           productImagePaths.push(webPath);
@@ -91,7 +91,7 @@ export const createProduct = async (req: JwtPayload, res: Response) => {
           const [_, dimensionIndex, conditionIndex] = file.fieldname.split("_");
           const fileName = `condition_${dimensionIndex}_${conditionIndex}_${Date.now()}_${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
           const filePath = path.join(uploadDir, fileName);
-          const webPath = `${API_URL}/uploads/products/conditions/${fileName}`;
+          const webPath = `/uploads/products/conditions/${fileName}`;
 
           fs.writeFileSync(filePath, file.buffer);
 
@@ -104,16 +104,27 @@ export const createProduct = async (req: JwtPayload, res: Response) => {
       }
     }
 
-    // Prepare the final product data with image URLs
-    const payload = {
+    // Find existing product
+    const existingProduct = await Products.findByPk(id);
+    if (!existingProduct) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
+    }
+
+    // Prepare update data
+    const updateData: any = {
       ...productData,
-      images:
-        productImagePaths.length > 0 ? productImagePaths : productData.images,
     };
 
-    // Update condition images in dimensions
-    if (payload.dimensions && Array.isArray(payload.dimensions)) {
-      payload.dimensions = payload.dimensions.map(
+    // Only update images if new ones were uploaded
+    if (productImagePaths.length > 0) {
+      updateData.images = productImagePaths;
+    }
+
+    // Update condition images
+    if (updateData.dimensions && Array.isArray(updateData.dimensions)) {
+      updateData.dimensions = updateData.dimensions.map(
         (dimension: any, dimIndex: number) => {
           if (dimension.conditions && Array.isArray(dimension.conditions)) {
             dimension.conditions = dimension.conditions.map(
@@ -137,46 +148,18 @@ export const createProduct = async (req: JwtPayload, res: Response) => {
       );
     }
 
-    // Validate and sanitize data
-    payload.specifications = Array.isArray(payload.specifications)
-      ? payload.specifications
-      : [];
-    payload.dimensions = Array.isArray(payload.dimensions)
-      ? payload.dimensions
-      : [];
-    payload.delivery = Array.isArray(payload.delivery) ? payload.delivery : [];
-    payload.categories = Array.isArray(payload.categories)
-      ? payload.categories
-      : [];
+    // Update product
+    const updatedProduct = await existingProduct.update(updateData);
 
-    // Save to database
-    if (Products && (Products as any).create) {
-      try {
-        const created = await (Products as any).create(payload);
-        return res.status(201).json(created);
-      } catch (e) {
-        console.error("Database creation error:", e);
-        return res.status(500).json({
-          message: "Database error",
-          error: (e as Error).message,
-        });
-      }
-    }
-
-    // Fallback to memory storage (for development)
-    const id = payload.id || `prod_${Date.now()}`;
-    const created = {
-      ...payload,
-      id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    memoryProducts.unshift(created);
-    return res.status(201).json(created);
+    return res.status(200).json({
+      success: true,
+      message: "Product updated successfully",
+      data: updatedProduct,
+    });
   } catch (error: any) {
-    console.error("Product creation error:", error);
+    console.error("Product update error:", error);
     return res.status(500).json({
-      message: "Failed to create product",
+      message: "Failed to update product",
       error: error.message,
     });
   }

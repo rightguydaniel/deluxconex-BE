@@ -7,6 +7,7 @@ import logger from "morgan";
 import { json, text, urlencoded } from "body-parser";
 import { database } from "./configs/database/database";
 import indexRoutes from "./routes/indexRoutes";
+import path from "path";
 
 const app = express();
 
@@ -20,6 +21,11 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "public", "uploads"))
+);
+app.use(express.static(path.join(process.cwd(), "public")));
 app.use("/v1", indexRoutes);
 app.get("/", (request: Request, response: Response) => {
   response.redirect("/v1");
