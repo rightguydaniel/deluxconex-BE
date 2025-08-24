@@ -8,6 +8,7 @@ import { json, text, urlencoded } from "body-parser";
 import { database } from "./configs/database/database";
 import indexRoutes from "./routes/indexRoutes";
 import path from "path";
+import * as glob from 'glob';
 
 const app = express();
 
@@ -30,7 +31,10 @@ app.use("/v1", indexRoutes);
 app.get("/", (request: Request, response: Response) => {
   response.redirect("/v1");
 });
-
+const modelsPath = path.join(__dirname, 'models/**/*.js');
+glob.sync(modelsPath).forEach((file) => {
+    require(file);
+});
 //add a logo with name favicon.ico to public folder and uncomment the line below to serve favicon
 // app.use(serveFavicon(path.join(__dirname, "../public", "favicon.ico")));
 

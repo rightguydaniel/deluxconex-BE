@@ -7,6 +7,7 @@ import {
   OrdersController,
   ApiError,
   CheckoutPaymentIntent,
+  PaypalExperienceLandingPage,
 } from "@paypal/paypal-server-sdk";
 import sendResponse from "../utils/sendResponse";
 import Orders from "../models/orders";
@@ -299,16 +300,21 @@ async function createPayPalOrder(cart: any, invoice: any) {
           description: `Invoice #${invoice.invoiceNumber}`,
         },
       ],
-      payment_source: {
+      paymentSource: {
         card: {
-          experience_context: {
-            payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
-            brand_name: "Your Company Name",
+          experienceContext: {
+            paymentMethodPreference: "IMMEDIATE_PAYMENT_REQUIRED",
+            // paymentMethod: "CARD",
+            brandName: "Deluxconex",
             locale: "en-US",
-            landing_page: "LOGIN",
-            user_action: "PAY_NOW",
-            return_url: `${process.env.APP_URL}/checkout/success?invoiceId=${invoice.id}`,
-            cancel_url: `${process.env.APP_URL}/checkout/cancel?invoiceId=${invoice.id}`,
+            landingPage: "BILLING",
+            userAction: "PAY_NOW",
+            shippingPreference: "NO_SHIPPING",
+            returnUrl: `${process.env.APP_URL}/checkout/success?invoiceId=${invoice.id}`,
+            cancelUrl: `${process.env.APP_URL}/checkout/cancel?invoiceId=${invoice.id}`,
+            paymentMethod: {
+              payeePreferred: "IMMEDIATE_PAYMENT_REQUIRED",
+            },
           },
         },
       },

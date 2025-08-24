@@ -102,13 +102,14 @@ PaymentMethods.init(
       },
     },
     billingAddress: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       allowNull: true,
     },
     // PayPal integration fields
     paypalPaymentMethodId: {
       type: DataTypes.STRING,
       allowNull: true,
+      defaultValue: "",
     },
     paypalCustomerId: {
       type: DataTypes.STRING,
@@ -119,8 +120,16 @@ PaymentMethods.init(
       allowNull: true,
       defaultValue: null,
     },
-    createdAt: "",
-    updatedAt: "",
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
   },
   {
     sequelize: database,
