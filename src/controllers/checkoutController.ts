@@ -7,13 +7,11 @@ import {
   OrdersController,
   ApiError,
   CheckoutPaymentIntent,
-  PaypalExperienceLandingPage,
 } from "@paypal/paypal-server-sdk";
 import sendResponse from "../utils/sendResponse";
 import Orders from "../models/orders";
 import Invoices, { InvoiceStatus } from "../models/invoices";
 import dotenv from "dotenv";
-import { dot } from "node:test/reporters";
 import { v4 } from "uuid";
 
 dotenv.config();
@@ -96,7 +94,7 @@ export const createCheckout = async (req: Request, res: Response) => {
 
     // Generate invoice number (you might want a more sophisticated system)
     const invoiceCount = await Invoices.count();
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${(invoiceCount + 1).toString().padStart(6, "0")}`;
+    const invoiceNumber = `INV-${Date.now()})`;
 
     // Create invoice
     const invoice: any = await Invoices.create({
