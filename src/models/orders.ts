@@ -56,7 +56,7 @@ Orders.init(
       },
     },
     items: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       allowNull: false,
     },
     subtotal: {
@@ -86,7 +86,7 @@ Orders.init(
       defaultValue: "pending",
     },
     shippingAddress: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       allowNull: false,
     },
     paymentMethod: {

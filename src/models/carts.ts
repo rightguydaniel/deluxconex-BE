@@ -58,7 +58,7 @@ Carts.init(
       },
     },
     items: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       allowNull: false,
       defaultValue: [],
     },
@@ -88,7 +88,6 @@ Carts.init(
     tableName: "Carts",
     timestamps: true,
     createdAt: false, // We only care about when the cart was updated
-    
   }
 );
 
