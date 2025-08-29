@@ -9,6 +9,11 @@ import {
   getProductsByCategory,
   searchProducts,
 } from "../controllers/admin/getProduct";
+import {
+  allInvoices,
+  updateInvoiceStatus,
+} from "../controllers/invoiceController";
+import { allOrders, updateOrderStatus } from "../controllers/orderController";
 
 const adminRoutes = express.Router();
 adminRoutes.post("/products", upload.any(), createProduct);
@@ -24,5 +29,11 @@ adminRoutes.get("/products/category/:category", getProductsByCategory);
 
 // Search products
 adminRoutes.get("/products/search", searchProducts);
+
+adminRoutes.get("/invoices", allInvoices);
+adminRoutes.patch("/invoices/:id/:status", updateInvoiceStatus);
+
+adminRoutes.get("/orders", allOrders);
+adminRoutes.patch("/order/:id", updateOrderStatus);
 
 export default adminRoutes;

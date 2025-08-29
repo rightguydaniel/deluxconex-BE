@@ -232,10 +232,10 @@ export const updateCartItem = async (req: JwtPayload, res: Response) => {
 export const removeFromCart = async (req: JwtPayload, res: Response) => {
   try {
     const userId = req.user.id;
-    const { productId } = req.params;
+    const productId = req.params.productId;
 
     // We need to get the full item data from the request body to match the exact configuration
-    const itemToRemove: CartItem = req.body;
+    const itemToRemove = req.body.itemToRemove;
 
     const cart: any = await Carts.findOne({ where: { userId } });
     if (!cart) {
@@ -250,7 +250,7 @@ export const removeFromCart = async (req: JwtPayload, res: Response) => {
     const filteredItems = currentItems.filter(
       (item: CartItem) =>
         !(
-          item.productId === itemToRemove.productId &&
+          item.productId === productId &&
           item.selectedDimension?.dimension ===
             itemToRemove.selectedDimension?.dimension &&
           item.selectedCondition?.condition ===

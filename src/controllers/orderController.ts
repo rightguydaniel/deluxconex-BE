@@ -6,7 +6,18 @@ import { Users } from "../models/users";
 import sendResponse from "../utils/sendResponse";
 import { JwtPayload } from "jsonwebtoken";
 import { v4 } from "uuid";
-// import { client } from "../configs/payment/paypal";
+
+export const allOrders = async (req: JwtPayload, res: Response) => {
+  try {
+    const orders = await Orders.findAll({ order: [["createdAt", "DESC"]] });
+    sendResponse(res, 200, "Orders fetched", orders);
+    return;
+  } catch (error: any) {
+    console.log("Error in allOrders", error.message);
+    sendResponse(res, 500, "Internal Server Error", null, error.message);
+    return;
+  }
+};
 
 export const getOrders = async (req: JwtPayload, res: Response) => {
   try {
@@ -104,16 +115,29 @@ export const createOrder = async (req: JwtPayload, res: Response) => {
 export const updateOrderStatus = async (req: JwtPayload, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, trackingNumber } = req.body;
+    const { status, trackingNumber, paymentStatus } = req.body;
 
     const order = await Orders.findByPk(id);
     if (!order) {
       return sendResponse(res, 404, "Order not found");
     }
-
-    await order.update({ status, trackingNumber });
-    sendResponse(res, 200, "Order status updated successfully", order);
+    if (status) {
+      await order.update({ status });
+      sendResponse(res, 200, "Order status updated successfully", order);
+      return;
+    }
+    if (trackingNumber) {
+      await order.update({ trackingNumber });
+      sendResponse(res, 200, "Order status updated successfully", order);
+      return;
+    }
+    if (paymentStatus) {
+      await order.update({ paymentStatus });
+      sendResponse(res, 200, "Order status updated successfully", order);
+      return;
+    }
   } catch (error: any) {
     sendResponse(res, 500, "Error updating order status", null, error.message);
+    return;
   }
 };

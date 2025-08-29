@@ -51,12 +51,12 @@ userRoutes.post("/password/reset", resetPassword);
 userRoutes.get("/profile", userAuth, getProfile);
 userRoutes.put("/profile", userAuth, updateProfile);
 
-// Address routes
-userRoutes.get("/addresses", userAuth, getAddresses);
-userRoutes.post("/addresses", userAuth, createAddress);
-userRoutes.put("/addresses/:id", userAuth, updateAddress);
-userRoutes.delete("/addresses/:id", userAuth, deleteAddress);
-userRoutes.patch("/addresses/:id/default", userAuth, setDefaultAddress);
+// // Address routes
+// userRoutes.get("/addresses", userAuth, getAddresses);
+// userRoutes.post("/addresses", userAuth, createAddress);
+// userRoutes.put("/addresses/:id", userAuth, updateAddress);
+// userRoutes.delete("/addresses/:id", userAuth, deleteAddress);
+// userRoutes.patch("/addresses/:id/default", userAuth, setDefaultAddress);
 
 // Cart routes
 userRoutes.get("/cart", userAuth, getCart);
@@ -67,19 +67,17 @@ userRoutes.delete("/cart", userAuth, clearCart);
 
 //checkout
 userRoutes.post("/checkout", userAuth, createCheckout);
-userRoutes.post("/checkout/success", handlePaymentSuccess);
-userRoutes.post("/checkout/cancel", handlePaymentCancel);
+userRoutes.post("/checkout/success", userAuth, handlePaymentSuccess);
+userRoutes.post("/checkout/cancel", userAuth, handlePaymentCancel);
 
 // Order routes
 userRoutes.get("/orders", userAuth, getOrders);
-userRoutes.get("/orders/:id", userAuth, getOrder);
-userRoutes.post("/orders", userAuth, createOrder);
-userRoutes.patch("/orders/:id/status", userAuth, updateOrderStatus);
+// userRoutes.get("/orders/:id", userAuth, getOrder);
+// userRoutes.post("/orders", userAuth, createOrder);
 
 // Invoice routes
 userRoutes.get("/invoices", userAuth, getInvoices);
-userRoutes.get("/invoices/:id", userAuth, getInvoice);
-userRoutes.patch("/invoices/:id/status", userAuth, updateInvoiceStatus);
-userRoutes.post("/invoices/:id/send", userAuth, sendInvoice);
+// userRoutes.get("/invoices/:id", userAuth, getInvoice);
+// userRoutes.post("/invoices/:id/send", userAuth, sendInvoice);
 
 export default userRoutes;

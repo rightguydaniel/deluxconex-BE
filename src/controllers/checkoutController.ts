@@ -13,10 +13,12 @@ import Orders from "../models/orders";
 import Invoices, { InvoiceStatus } from "../models/invoices";
 import dotenv from "dotenv";
 import { v4 } from "uuid";
+import { JwtPayload } from "jsonwebtoken";
+import Carts from "../models/carts";
 
 dotenv.config();
 
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET } = process.env;
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE } = process.env;
 
 const paypalClient = new Client({
   clientCredentialsAuthCredentials: {
@@ -32,7 +34,7 @@ const paypalClient = new Client({
       })(),
   },
   timeout: 0,
-  environment: Environment.Sandbox,
+  environment: PAYPAL_MODE === "sandbox"? Environment.Sandbox: Environment.Production,
   logging: {
     logLevel: LogLevel.Info,
     logRequest: { logBody: true },
@@ -106,6 +108,7 @@ export const createCheckout = async (req: Request, res: Response) => {
 
     // Update invoice with PayPal order ID
     await invoice.update({
+      invoiceNumber: paypalOrder.id, // Store PayPal order ID as invoice number
       status: InvoiceStatus.SENT,
       notes: `PayPal Order ID: ${paypalOrder.id}\n${invoice.notes}`,
     });
@@ -125,21 +128,22 @@ export const createCheckout = async (req: Request, res: Response) => {
       paypalOrderId: paypalOrder.id,
       approvalUrl: approvalLink.href,
     });
-  } catch (error) {
-    console.error("Checkout error:", error);
+  } catch (error:any) {
+    console.error("Checkout error:", error.message);
     sendResponse(
       res,
       500,
       "Failed to create checkout",
       null,
-      error instanceof Error ? error.message : "Unknown error"
+      error.message
     );
   }
 };
 
-export const handlePaymentSuccess = async (req: Request, res: Response) => {
+export const handlePaymentSuccess = async (req: JwtPayload, res: Response) => {
   try {
-    const { orderID, invoiceId } = req.body;
+    const userId = req.user.id
+    const { invoiceId, orderID, payerID } = req.body; // orderID is the PayPal order ID from frontend
 
     if (!orderID || !invoiceId) {
       return sendResponse(
@@ -147,42 +151,68 @@ export const handlePaymentSuccess = async (req: Request, res: Response) => {
         400,
         "Missing parameters",
         null,
-        "Order ID and Invoice ID are required"
+        "PayPal Order ID and Invoice ID are required"
       );
     }
 
-    // Capture PayPal payment
+    // First get the invoice to verify it exists
+    const invoice: any = await Invoices.findByPk(invoiceId);
+    if (!invoice) {
+      throw new Error("Invoice not found");
+    }
+
+    // Capture PayPal payment using the PayPal order ID (not your internal order ID)
     const captureResult = await capturePayPalOrder(orderID);
 
     if (captureResult.status !== "COMPLETED") {
       throw new Error(`Payment not completed. Status: ${captureResult.status}`);
     }
 
-    // Update invoice and order status
-    const invoice: any = await Invoices.findByPk(invoiceId);
-    if (!invoice) {
-      throw new Error("Invoice not found");
-    }
-
+    // Update invoice with payment details
     await invoice.update({
       status: InvoiceStatus.PAID,
+      paypalPayerId: payerID, // Store payer ID for reference
+      paypalCaptureId: captureResult.id, // Store the capture ID
+      notes: `Payment captured successfully\nPayPal Capture ID: ${captureResult.id}\nPayer ID: ${payerID}\n${invoice.notes}`
     });
 
+    // Update the associated order
     const order: any = await Orders.findByPk(invoice.orderId);
     if (order) {
       await order.update({
         paymentStatus: "paid",
         status: "processing",
+        trackingNumber: captureResult.id, // Optional: use capture ID as temporary tracking
       });
     }
 
+    // Get updated order details for response
+    const updatedOrder:any = await Orders.findByPk(invoice.orderId);
+    const updatedInvoice:any = await Invoices.findByPk(invoiceId);
+    await Carts.destroy({ where: { userId } });
     sendResponse(res, 200, "Payment successful", {
-      invoiceId: invoice.id,
-      orderId: order?.id,
+      invoiceId: updatedInvoice.id,
+      invoiceNumber: updatedInvoice.invoiceNumber, // This now contains PayPal order ID
+      orderId: updatedOrder?.id,
       paymentStatus: "paid",
+      captureId: captureResult.id,
+      totalAmount: updatedInvoice.total
     });
+
   } catch (error) {
     console.error("Payment success error:", error);
+    
+    // Specific error handling for PayPal errors
+    if (error instanceof ApiError) {
+      return sendResponse(
+        res,
+        500,
+        "PayPal payment processing failed",
+        null,
+        `PayPal error: ${error.message}`
+      );
+    }
+    
     sendResponse(
       res,
       500,
@@ -289,7 +319,6 @@ async function createPayPalOrder(cart: any, invoice: any) {
         card: {
           experienceContext: {
             paymentMethodPreference: "IMMEDIATE_PAYMENT_REQUIRED",
-            // paymentMethod: "CARD",
             brandName: "Deluxconex",
             locale: "en-US",
             landingPage: "BILLING",
@@ -297,9 +326,7 @@ async function createPayPalOrder(cart: any, invoice: any) {
             shippingPreference: "NO_SHIPPING",
             returnUrl: `${process.env.APP_URL}/checkout/success?invoiceId=${invoice.id}`,
             cancelUrl: `${process.env.APP_URL}/checkout/cancel?invoiceId=${invoice.id}`,
-            paymentMethod: {
-              payeePreferred: "IMMEDIATE_PAYMENT_REQUIRED",
-            },
+            paymentMethod: "CARD",
           },
         },
       },
@@ -341,8 +368,17 @@ async function capturePayPalOrder(orderID: string) {
           ? await body.text()
           : ""
     );
+    console.log("PayPal capture result:", {
+      status: result.status,
+      id: result.id,
+      orderID: orderID
+    });
     return result;
   } catch (error) {
+    console.error("PayPal capture error details:", {
+      orderID,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     if (error instanceof ApiError) {
       throw new Error(`PayPal capture error: ${error.message}`);
     }

@@ -4,17 +4,31 @@ import { Orders } from "../models/orders";
 import sendResponse from "../utils/sendResponse";
 import { JwtPayload } from "jsonwebtoken";
 
+export const allInvoices = async (req: JwtPayload, res: Response) => {
+  try {
+    const invoices = await Invoices.findAll({
+      order: [["issueDate", "DESC"]],
+    });
+    sendResponse(res, 200, "All Invoices retrieved successfully", invoices);
+    return;
+  } catch (error: any) {
+    console.log("allInvoices:", error.message);
+    sendResponse(
+      res,
+      500,
+      "Error retrieving all invoices",
+      null,
+      error.message
+    );
+    return;
+  }
+};
+
 export const getInvoices = async (req: JwtPayload, res: Response) => {
   try {
     const userId = req.user.id;
     const invoices = await Invoices.findAll({
       where: { userId },
-      include: [
-        {
-          model: Orders,
-          attributes: ["id", "status"],
-        },
-      ],
       order: [["issueDate", "DESC"]],
     });
     sendResponse(res, 200, "Invoices retrieved successfully", invoices);
@@ -50,8 +64,7 @@ export const getInvoice = async (req: JwtPayload, res: Response) => {
 
 export const updateInvoiceStatus = async (req: JwtPayload, res: Response) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    const { id, status } = req.params;
 
     const invoice = await Invoices.findByPk(id);
     if (!invoice) {
