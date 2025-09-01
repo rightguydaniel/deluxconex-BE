@@ -22,6 +22,8 @@ export interface AddressesAttributes {
 }
 
 export class Addresses extends Model<AddressesAttributes> {}
+// export class Addresses extends Model<AddressesAttributes> implements AddressesAttributes {
+
 
 Addresses.init(
   {

@@ -15,6 +15,7 @@ import dotenv from "dotenv";
 import { v4 } from "uuid";
 import { JwtPayload } from "jsonwebtoken";
 import Carts from "../models/carts";
+import Addresses from "../models/addresses";
 
 dotenv.config();
 
@@ -34,7 +35,8 @@ const paypalClient = new Client({
       })(),
   },
   timeout: 0,
-  environment: PAYPAL_MODE === "sandbox"? Environment.Sandbox: Environment.Production,
+  environment:
+    PAYPAL_MODE === "sandbox" ? Environment.Sandbox : Environment.Production,
   logging: {
     logLevel: LogLevel.Info,
     logRequest: { logBody: true },
@@ -50,12 +52,31 @@ export const createCheckout = async (req: Request, res: Response) => {
     const { cart } = req.body;
 
     if (!userId) {
-      return sendResponse(res, 401, "Authentication required", null, "User not authenticated");
+      return sendResponse(res, 401, "Authentication required");
+    }
+    const userAddress = await Addresses.findOne({
+      where: { userId, isDefault: true },
+    });
+    if (!userAddress) {
+      sendResponse(res, 200, "address required");
+      return;
     }
 
     if (!cart || !cart.items || cart.items.length === 0) {
-      return sendResponse(res, 400, "Cart is empty", null, "Cannot checkout with empty cart");
+      sendResponse(res, 400, "Cart is empty");
+      return;
     }
+    const address =
+      (await Addresses.findOne({ where: { userId, isDefault: true } })) ||
+      (await Addresses.findOne({ where: { userId } }));
+
+    const shippingAddress = {
+      street: address?.street,
+      city: address?.city,
+      state: address?.state,
+      postalCode: address?.postalCode,
+      country: address?.country,
+    };
 
     // Create order in database
     const orderId = v4();
@@ -77,7 +98,7 @@ export const createCheckout = async (req: Request, res: Response) => {
       tax: cart.tax,
       total: cart.total,
       status: "pending",
-      shippingAddress: req.body.shippingAddress || {},
+      shippingAddress: shippingAddress,
       paymentMethod: "card",
       paymentStatus: "pending",
     });
@@ -128,21 +149,15 @@ export const createCheckout = async (req: Request, res: Response) => {
       paypalOrderId: paypalOrder.id,
       approvalUrl: approvalLink.href,
     });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error("Checkout error:", error.message);
-    sendResponse(
-      res,
-      500,
-      "Failed to create checkout",
-      null,
-      error.message
-    );
+    sendResponse(res, 500, "Failed to create checkout", null, error.message);
   }
 };
 
 export const handlePaymentSuccess = async (req: JwtPayload, res: Response) => {
   try {
-    const userId = req.user.id
+    const userId = req.user.id;
     const { invoiceId, orderID, payerID } = req.body; // orderID is the PayPal order ID from frontend
 
     if (!orderID || !invoiceId) {
@@ -173,7 +188,7 @@ export const handlePaymentSuccess = async (req: JwtPayload, res: Response) => {
       status: InvoiceStatus.PAID,
       paypalPayerId: payerID, // Store payer ID for reference
       paypalCaptureId: captureResult.id, // Store the capture ID
-      notes: `Payment captured successfully\nPayPal Capture ID: ${captureResult.id}\nPayer ID: ${payerID}\n${invoice.notes}`
+      notes: `Payment captured successfully\nPayPal Capture ID: ${captureResult.id}\nPayer ID: ${payerID}\n${invoice.notes}`,
     });
 
     // Update the associated order
@@ -187,8 +202,8 @@ export const handlePaymentSuccess = async (req: JwtPayload, res: Response) => {
     }
 
     // Get updated order details for response
-    const updatedOrder:any = await Orders.findByPk(invoice.orderId);
-    const updatedInvoice:any = await Invoices.findByPk(invoiceId);
+    const updatedOrder: any = await Orders.findByPk(invoice.orderId);
+    const updatedInvoice: any = await Invoices.findByPk(invoiceId);
     await Carts.destroy({ where: { userId } });
     sendResponse(res, 200, "Payment successful", {
       invoiceId: updatedInvoice.id,
@@ -196,12 +211,11 @@ export const handlePaymentSuccess = async (req: JwtPayload, res: Response) => {
       orderId: updatedOrder?.id,
       paymentStatus: "paid",
       captureId: captureResult.id,
-      totalAmount: updatedInvoice.total
+      totalAmount: updatedInvoice.total,
     });
-
   } catch (error) {
     console.error("Payment success error:", error);
-    
+
     // Specific error handling for PayPal errors
     if (error instanceof ApiError) {
       return sendResponse(
@@ -212,7 +226,7 @@ export const handlePaymentSuccess = async (req: JwtPayload, res: Response) => {
         `PayPal error: ${error.message}`
       );
     }
-    
+
     sendResponse(
       res,
       500,
@@ -371,13 +385,13 @@ async function capturePayPalOrder(orderID: string) {
     console.log("PayPal capture result:", {
       status: result.status,
       id: result.id,
-      orderID: orderID
+      orderID: orderID,
     });
     return result;
   } catch (error) {
     console.error("PayPal capture error details:", {
       orderID,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     if (error instanceof ApiError) {
       throw new Error(`PayPal capture error: ${error.message}`);

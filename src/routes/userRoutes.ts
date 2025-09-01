@@ -52,11 +52,11 @@ userRoutes.get("/profile", userAuth, getProfile);
 userRoutes.put("/profile", userAuth, updateProfile);
 
 // // Address routes
-// userRoutes.get("/addresses", userAuth, getAddresses);
-// userRoutes.post("/addresses", userAuth, createAddress);
-// userRoutes.put("/addresses/:id", userAuth, updateAddress);
-// userRoutes.delete("/addresses/:id", userAuth, deleteAddress);
-// userRoutes.patch("/addresses/:id/default", userAuth, setDefaultAddress);
+userRoutes.get("/addresses", userAuth, getAddresses);
+userRoutes.post("/addresses", userAuth, createAddress);
+userRoutes.put("/addresses/:id", userAuth, updateAddress);
+userRoutes.delete("/addresses/:id", userAuth, deleteAddress);
+userRoutes.patch("/addresses/:id/default", userAuth, setDefaultAddress);
 
 // Cart routes
 userRoutes.get("/cart", userAuth, getCart);

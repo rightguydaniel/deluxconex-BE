@@ -18,7 +18,17 @@ export const getAddresses = async (req: JwtPayload, res: Response) => {
 export const createAddress = async (req: JwtPayload, res: Response) => {
   try {
     const userId = req.user.id;
-    const { type, street, city, state, postalCode, country, isDefault, phone, additionalInfo } = req.body;
+    const {
+      type,
+      street,
+      city,
+      state,
+      postalCode,
+      country,
+      isDefault,
+      phone,
+      additionalInfo,
+    } = req.body;
 
     if (isDefault) {
       // Remove default from other addresses
@@ -29,7 +39,7 @@ export const createAddress = async (req: JwtPayload, res: Response) => {
     }
 
     const address = await Addresses.create({
-        id:v4(),
+      id: v4(),
       userId,
       type,
       street,
@@ -39,12 +49,14 @@ export const createAddress = async (req: JwtPayload, res: Response) => {
       country,
       isDefault,
       phone,
-      additionalInfo
+      additionalInfo,
     });
 
-    sendResponse(res, 201, "Address created successfully", address);
+    sendResponse(res, 200, "Address created successfully", address);
+    return;
   } catch (error: any) {
     sendResponse(res, 500, "Error creating address", null, error.message);
+    return;
   }
 };
 
@@ -52,11 +64,21 @@ export const updateAddress = async (req: JwtPayload, res: Response) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    const { type, street, city, state, postalCode, country, isDefault, phone, additionalInfo } = req.body;
+    const {
+      type,
+      street,
+      city,
+      state,
+      postalCode,
+      country,
+      isDefault,
+      phone,
+      additionalInfo,
+    } = req.body;
 
     const address = await Addresses.findOne({ where: { id, userId } });
     if (!address) {
-      return sendResponse(res, 404, "Address not found");
+      return sendResponse(res, 400, "Address not found");
     }
 
     if (isDefault) {
@@ -76,7 +98,7 @@ export const updateAddress = async (req: JwtPayload, res: Response) => {
       country,
       isDefault,
       phone,
-      additionalInfo
+      additionalInfo,
     });
 
     sendResponse(res, 200, "Address updated successfully", address);
@@ -108,10 +130,7 @@ export const setDefaultAddress = async (req: JwtPayload, res: Response) => {
     const { id } = req.params;
 
     // Remove default from all addresses
-    await Addresses.update(
-      { isDefault: false },
-      { where: { userId } }
-    );
+    await Addresses.update({ isDefault: false }, { where: { userId } });
 
     // Set new default
     const address = await Addresses.findOne({ where: { id, userId } });
@@ -122,6 +141,12 @@ export const setDefaultAddress = async (req: JwtPayload, res: Response) => {
     await address.update({ isDefault: true });
     sendResponse(res, 200, "Default address set successfully", address);
   } catch (error: any) {
-    sendResponse(res, 500, "Error setting default address", null, error.message);
+    sendResponse(
+      res,
+      500,
+      "Error setting default address",
+      null,
+      error.message
+    );
   }
 };
