@@ -66,7 +66,7 @@ export const createCheckout = async (req: Request, res: Response) => {
       sendResponse(res, 400, "Cart is empty");
       return;
     }
-    const address =
+    const address:any =
       (await Addresses.findOne({ where: { userId, isDefault: true } })) ||
       (await Addresses.findOne({ where: { userId } }));
 
