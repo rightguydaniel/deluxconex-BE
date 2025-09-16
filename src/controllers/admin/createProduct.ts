@@ -1,183 +1,41 @@
-import { Response } from "express";
-import Products from "../../models/products";
-import { JwtPayload } from "jsonwebtoken";
-import fs from "fs";
-import path from "path";
-import dotenv from "dotenv";
-dotenv.config();
-const API_URL = process.env.API_URL;
+import { Request, Response } from "express";
+import { Transaction } from "sequelize";
+import { database } from "../../configs/database/database";
+import Products from "../../models/products"; // your Sequelize model (default export or adjust import)
+import {
+  getApiBase,
+  parseProductData,
+  mergeFilesIntoPayload,
+} from "../../utils/uploadImages";
 
-let memoryProducts: any[] = [];
-
-export const createProduct = async (req: JwtPayload, res: Response) => {
+export async function createProduct(req: Request, res: Response) {
+  let t: Transaction | null = null;
   try {
-    if (!req.body.productData) {
-      return res.status(400).json({
-        message: "Missing product data",
-      });
-    }
+    const apiBase = getApiBase(req);
+    const payload = parseProductData(req);
+    const files = (req.files || []) as Express.Multer.File[];
 
-    let productData;
+    mergeFilesIntoPayload(payload, files, apiBase);
 
-    // Check if productData is already an object (from previous parsing)
-    if (typeof req.body.productData === "object") {
-      productData = req.body.productData;
-    } else if (typeof req.body.productData === "string") {
-      // Parse the product data from JSON string
-      try {
-        productData = JSON.parse(req.body.productData);
-      } catch (parseError) {
-        return res.status(400).json({
-          message: "Invalid product data format",
-          error: (parseError as Error).message,
-        });
-      }
-    } else {
-      return res.status(400).json({
-        message: "Invalid product data type",
-      });
-    }
+    // normalize
+    if (!Array.isArray(payload.images)) payload.images = [];
+    if (!Array.isArray(payload.dimensions)) payload.dimensions = [];
 
-    // Handle file uploads
-    const productImagePaths: string[] = [];
-    const conditionImageMap: { [key: string]: string[] } = {};
+    t = await database.transaction();
 
-    // Process uploaded files
-    if (req.files && Array.isArray(req.files)) {
-      const files = req.files as Express.Multer.File[];
+    // Map only your actual DB columns here:
+    const created = await Products.create(
+      payload,
+      { transaction: t }
+    );
 
-      // Process product images
-      const productImages = files.filter(
-        (file) => file.fieldname === "productImages"
-      );
-      if (productImages.length > 0) {
-        const uploadDir = path.join(
-          process.cwd(),
-          "public",
-          "uploads",
-          "products"
-        );
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        for (const file of productImages) {
-          const fileName = `product_${Date.now()}_${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
-          const filePath = path.join(uploadDir, fileName);
-          const webPath = `${API_URL}/uploads/products/${fileName}`;
-
-          fs.writeFileSync(filePath, file.buffer);
-          productImagePaths.push(webPath);
-        }
-      }
-
-      // Process condition images
-      const conditionImages = files.filter((file) =>
-        file.fieldname.startsWith("conditionImages_")
-      );
-      if (conditionImages.length > 0) {
-        const uploadDir = path.join(
-          process.cwd(),
-          "public",
-          "uploads",
-          "products",
-          "conditions"
-        );
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        for (const file of conditionImages) {
-          const [_, dimensionIndex, conditionIndex] = file.fieldname.split("_");
-          const fileName = `condition_${dimensionIndex}_${conditionIndex}_${Date.now()}_${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`;
-          const filePath = path.join(uploadDir, fileName);
-          const webPath = `${API_URL}/uploads/products/conditions/${fileName}`;
-
-          fs.writeFileSync(filePath, file.buffer);
-
-          const key = `${dimensionIndex}_${conditionIndex}`;
-          if (!conditionImageMap[key]) {
-            conditionImageMap[key] = [];
-          }
-          conditionImageMap[key].push(webPath);
-        }
-      }
-    }
-
-    // Prepare the final product data with image URLs
-    const payload = {
-      ...productData,
-      images:
-        productImagePaths.length > 0 ? productImagePaths : productData.images,
-    };
-
-    // Update condition images in dimensions
-    if (payload.dimensions && Array.isArray(payload.dimensions)) {
-      payload.dimensions = payload.dimensions.map(
-        (dimension: any, dimIndex: number) => {
-          if (dimension.conditions && Array.isArray(dimension.conditions)) {
-            dimension.conditions = dimension.conditions.map(
-              (condition: any, condIndex: number) => {
-                const key = `${dimIndex}_${condIndex}`;
-                if (
-                  conditionImageMap[key] &&
-                  conditionImageMap[key].length > 0
-                ) {
-                  return {
-                    ...condition,
-                    images: conditionImageMap[key],
-                  };
-                }
-                return condition;
-              }
-            );
-          }
-          return dimension;
-        }
-      );
-    }
-
-    // Validate and sanitize data
-    payload.specifications = Array.isArray(payload.specifications)
-      ? payload.specifications
-      : [];
-    payload.dimensions = Array.isArray(payload.dimensions)
-      ? payload.dimensions
-      : [];
-    payload.delivery = Array.isArray(payload.delivery) ? payload.delivery : [];
-    payload.categories = Array.isArray(payload.categories)
-      ? payload.categories
-      : [];
-
-    // Save to database
-    if (Products && (Products as any).create) {
-      try {
-        const created = await (Products as any).create(payload);
-        return res.status(201).json(created);
-      } catch (e) {
-        console.error("Database creation error:", e);
-        return res.status(500).json({
-          message: "Database error",
-          error: (e as Error).message,
-        });
-      }
-    }
-
-    // Fallback to memory storage (for development)
-    const id = payload.id || `prod_${Date.now()}`;
-    const created = {
-      ...payload,
-      id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    memoryProducts.unshift(created);
-    return res.status(201).json(created);
-  } catch (error: any) {
-    console.error("Product creation error:", error);
-    return res.status(500).json({
-      message: "Failed to create product",
-      error: error.message,
-    });
+    await t.commit();
+    return res.status(201).json({ success: true, data: created });
+  } catch (err: any) {
+    if (t) await t.rollback();
+    console.error("createProduct error:", err);
+    return res
+      .status(400)
+      .json({ success: false, message: err.message || "Create failed" });
   }
-};
+}
