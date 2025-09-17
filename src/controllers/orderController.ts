@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { Orders } from "../models/orders";
+import { Orders, OrderStatus } from "../models/orders";
 import { Carts, CartsAttributes } from "../models/carts";
 import { Invoices, InvoiceStatus } from "../models/invoices";
 import { Users } from "../models/users";
@@ -22,10 +22,14 @@ export const allOrders = async (req: JwtPayload, res: Response) => {
 export const getOrders = async (req: JwtPayload, res: Response) => {
   try {
     const userId = req.user.id;
-    const orders = await Orders.findAll({
+    const orders: any = await Orders.findAll({
       where: { userId },
       order: [["createdAt", "DESC"]],
     });
+    for (const order of orders) {
+      order.shippingAddress = JSON.parse(order.shippingAddress);
+      order.items = JSON.parse(order.items);
+    }
     sendResponse(res, 200, "Orders retrieved successfully", orders);
   } catch (error: any) {
     sendResponse(res, 500, "Error retrieving orders", null, error.message);
@@ -69,7 +73,7 @@ export const createOrder = async (req: JwtPayload, res: Response) => {
       shipping: cart.shipping,
       tax: cart.tax,
       total: cart.total,
-      status: "pending",
+      status: OrderStatus.PROCESSING,
       shippingAddress,
       paymentMethod,
       paymentStatus: "pending",

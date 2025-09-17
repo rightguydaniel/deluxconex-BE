@@ -40,6 +40,11 @@ import {
   handlePaymentCancel,
   handlePaymentSuccess,
 } from "../controllers/checkoutController";
+import {
+  confirmStripeCheckout,
+  createStripeCheckoutSession,
+  stripeWebhook,
+} from "../controllers/stripeControllers";
 const userRoutes = express.Router();
 userRoutes.post("/register", register);
 userRoutes.post("/login", login);
@@ -69,6 +74,13 @@ userRoutes.delete("/cart", userAuth, clearCart);
 userRoutes.post("/checkout", userAuth, createCheckout);
 userRoutes.post("/checkout/success", userAuth, handlePaymentSuccess);
 userRoutes.post("/checkout/cancel", userAuth, handlePaymentCancel);
+userRoutes.post("/checkout/stripe/webhook", userAuth, stripeWebhook);
+userRoutes.post(
+  "/checkout/stripe/session",
+  userAuth,
+  createStripeCheckoutSession
+);
+userRoutes.post("/checkout/stripe/confirm", confirmStripeCheckout);
 
 // Order routes
 userRoutes.get("/orders", userAuth, getOrders);

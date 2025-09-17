@@ -21,6 +21,14 @@ interface ShippingAddress {
   postalCode: string;
   country: string;
 }
+export enum OrderStatus{
+  PENDING = "pending",
+  PROCESSING = "processing",
+  CONFIRMED = "confirmed",
+  SHIPPED = "shipped",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled"
+}
 
 export interface OrdersAttributes {
   id: string;
@@ -30,7 +38,7 @@ export interface OrdersAttributes {
   shipping: number;
   tax: number;
   total: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status: OrderStatus;
   shippingAddress: ShippingAddress;
   paymentMethod: string;
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
@@ -76,14 +84,8 @@ Orders.init(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM(
-        "pending",
-        "processing",
-        "shipped",
-        "delivered",
-        "cancelled"
-      ),
-      defaultValue: "pending",
+      type: DataTypes.STRING,
+      defaultValue: OrderStatus.PENDING,
     },
     shippingAddress: {
       type: DataTypes.JSON,

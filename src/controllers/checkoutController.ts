@@ -9,7 +9,7 @@ import {
   CheckoutPaymentIntent,
 } from "@paypal/paypal-server-sdk";
 import sendResponse from "../utils/sendResponse";
-import Orders from "../models/orders";
+import Orders, { OrderStatus } from "../models/orders";
 import Invoices, { InvoiceStatus } from "../models/invoices";
 import dotenv from "dotenv";
 import { v4 } from "uuid";
@@ -97,7 +97,7 @@ export const createCheckout = async (req: Request, res: Response) => {
       shipping: cart.shipping,
       tax: cart.tax,
       total: cart.total,
-      status: "pending",
+      status: OrderStatus.PENDING,
       shippingAddress: shippingAddress,
       paymentMethod: "card",
       paymentStatus: "pending",
