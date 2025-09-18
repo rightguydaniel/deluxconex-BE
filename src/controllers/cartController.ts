@@ -44,6 +44,7 @@ export const addToCart = async (req: JwtPayload, res: Response) => {
   try {
     const userId = req.user.id;
     const item: CartItem = req.body;
+    console.log(req.body);
 
     // Validate required fields
     if (
@@ -65,24 +66,18 @@ export const addToCart = async (req: JwtPayload, res: Response) => {
         id: v4(),
         userId,
         items: [item],
-        subtotal: item.totalPrice,
+        subtotal: item.itemPrice,
         shipping: item.selectedDelivery?.price || 0,
         tax: item.totalPrice * 0.01,
-        total:
-          item.totalPrice +
-          (item.selectedDelivery?.price || 0) +
-          item.totalPrice * 0.01,
+        total: item.totalPrice + item.totalPrice * 0.01,
       });
 
       return sendResponse(res, 200, "Item added to cart successfully", {
         items: [item],
-        subtotal: item.totalPrice,
+        subtotal: item.itemPrice,
         shipping: item.selectedDelivery?.price || 0,
         tax: item.totalPrice * 0.01,
-        total:
-          item.totalPrice +
-          (item.selectedDelivery?.price || 0) +
-          item.totalPrice * 0.01,
+        total: item.totalPrice + item.totalPrice * 0.01,
       });
     }
 
@@ -117,14 +112,14 @@ export const addToCart = async (req: JwtPayload, res: Response) => {
 
     // Recalculate cart totals
     const subtotal = updatedItems.reduce(
-      (sum: number, item) => sum + item.totalPrice,
+      (sum: number, item) => sum + item.itemPrice * item.quantity,
       0
     );
     const shipping = updatedItems.reduce(
       (sum: number, item) => sum + (item.selectedDelivery?.price || 0),
       0
     );
-    const tax = subtotal * 0.01;
+    const tax = (subtotal + shipping) * 0.01;
     const total = subtotal + shipping + tax;
 
     // Update the cart in database
@@ -151,6 +146,7 @@ export const addToCart = async (req: JwtPayload, res: Response) => {
   } catch (error: any) {
     console.error("Error adding to cart:", error);
     sendResponse(res, 500, "Error adding to cart", null, error.message);
+    return;
   }
 };
 

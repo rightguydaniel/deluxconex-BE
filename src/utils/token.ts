@@ -6,7 +6,7 @@ const SECRET_KEY = `${process.env.APP_SECRET}`;
 
 export const generateToken = (user: any) => {
   console.log(SECRET_KEY);
-  return jwt.sign(user, SECRET_KEY, { expiresIn: "7d" });
+  return jwt.sign(user, SECRET_KEY, { expiresIn: "365d" });
 };
 
 export const generatePasswordResetToken = (user: any, expiry?: string) => {
