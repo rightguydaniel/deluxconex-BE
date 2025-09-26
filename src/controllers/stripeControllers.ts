@@ -76,7 +76,6 @@ export const createStripeCheckoutSession = async (
     const currency = (cart.currency || "usd").toLowerCase();
     const invoiceId = uuidv4();
     const orderId = uuidv4();
-    console.log(cart.items);
     // Create Invoice + Order in a transaction (both PENDING)
     await database.transaction(async (t) => {
       const shippingAddress = {
@@ -189,7 +188,6 @@ export const createStripeCheckoutSession = async (
       //     allowed_countries: ["US", "GB", "CA", "NG", "IE", "DE", "FR"], // adjust
       //   },
     });
-
     sendResponse(res, 200, "Stripe checkout session created", {
       url: session.url,
       sessionId: session.id,
@@ -216,7 +214,6 @@ export const createStripeCheckoutSession = async (
  */
 export const confirmStripeCheckout = async (req: Request, res: Response) => {
   const sessionId = req.body?.sessionId;
-  console.log(req.body?.sessionId);
   if (!sessionId) {
     sendResponse(res, 400, "Missing session_id");
     return;
@@ -268,6 +265,9 @@ export const confirmStripeCheckout = async (req: Request, res: Response) => {
             status: OrderStatus.CONFIRMED,
             total: amountMajor, // keep final total
             paymentMethod: "stripe",
+            paymentStatus: "paid",
+            paymentRef: pi.id,
+            paymentProvider: "stripe",
           },
           { transaction: t }
         );
@@ -364,6 +364,7 @@ export const stripeWebhook = async (req: Request, res: Response) => {
                 currency,
                 paymentProvider: "stripe",
                 paymentRef: pi.id,
+                paymentStatus: "paid",
               },
               { transaction: t }
             );

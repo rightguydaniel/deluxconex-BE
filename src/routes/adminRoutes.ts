@@ -14,6 +14,8 @@ import {
   updateInvoiceStatus,
 } from "../controllers/invoiceController";
 import { allOrders, updateOrderStatus } from "../controllers/orderController";
+import { getDashboardStats } from "../controllers/admin/getDashboardStats";
+import { getQuickStats } from "../controllers/admin/getQuickStats";
 
 const adminRoutes = express.Router();
 adminRoutes.post("/products", upload.any(), createProduct);
@@ -32,6 +34,11 @@ adminRoutes.get("/products/search", searchProducts);
 
 adminRoutes.get("/invoices", allInvoices);
 adminRoutes.patch("/invoices/:id/:status", updateInvoiceStatus);
+
+// Dashboard stats
+adminRoutes.get("/dashboard", getDashboardStats);
+// Quick stats for orders & invoices
+adminRoutes.get("/dashboard/quick-stats", getQuickStats);
 
 adminRoutes.get("/orders", allOrders);
 adminRoutes.patch("/order/:id", updateOrderStatus);
