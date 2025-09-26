@@ -24,7 +24,7 @@ interface ShippingAddress {
 export enum OrderStatus{
   PENDING = "pending",
   PROCESSING = "processing",
-  CONFIRMED = "confirmed",
+  // CONFIRMED = "confirmed",
   SHIPPED = "shipped",
   DELIVERED = "delivered",
   CANCELLED = "cancelled"

@@ -9,6 +9,7 @@ import Addresses from "../models/addresses"; // adjust import path/name
 import Carts from "../models/carts"; // adjust import path/name
 import sendResponse from "../utils/sendResponse";
 import Users from "../models/users";
+import { sendEmail } from "../configs/email/emailConfig";
 
 dotenv.config();
 
@@ -262,10 +263,10 @@ export const confirmStripeCheckout = async (req: Request, res: Response) => {
       if (order && order.status !== "paid") {
         await order.update(
           {
-            status: OrderStatus.CONFIRMED,
             total: amountMajor, // keep final total
             paymentMethod: "stripe",
             paymentStatus: "paid",
+            status: OrderStatus.PROCESSING,
             paymentRef: pi.id,
             paymentProvider: "stripe",
           },
@@ -291,6 +292,15 @@ export const confirmStripeCheckout = async (req: Request, res: Response) => {
       }
     });
     sendResponse(res, 200, "Payment successful");
+    sendEmail("admin@deluxconex.com", "New Order Received", `
+      A new order has been placed.
+      
+      Order ID: ${orderId}
+      Invoice ID: ${invoiceId}
+      Amount: ${amountMajor} ${currency.toUpperCase()}
+      
+      Please check the admin panel for more details.
+    `);
     return;
   } catch (err: any) {
     console.error("confirmStripeCheckout error:", err);
@@ -359,7 +369,7 @@ export const stripeWebhook = async (req: Request, res: Response) => {
           if (ord && ord.status !== "paid") {
             await ord.update(
               {
-                status: OrderStatus.CONFIRMED,
+                status: OrderStatus.PROCESSING,
                 total: amountMajor,
                 currency,
                 paymentProvider: "stripe",
