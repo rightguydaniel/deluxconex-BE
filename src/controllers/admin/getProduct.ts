@@ -13,6 +13,8 @@ interface GetProductsQuery {
   maxPrice?: string;
   sortBy?: string;
   sortOrder?: "ASC" | "DESC";
+  size?: string;
+  sort?: string;
 }
 
 export const getProducts = async (req: JwtPayload, res: Response) => {
@@ -26,35 +28,70 @@ export const getProducts = async (req: JwtPayload, res: Response) => {
       maxPrice,
       sortBy = "createdAt",
       sortOrder = "DESC",
+      size,
+      sort,
     } = req.query as GetProductsQuery;
 
-    // Build where clause for filtering
-    const whereClause: any = {};
+    const andConditions: any[] = [];
 
     // Search filter (name or SKU)
     if (search) {
-      whereClause[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { sku: { [Op.like]: `%${search}%` } },
-      ];
+      andConditions.push({
+        [Op.or]: [
+          { name: { [Op.like]: `%${search}%` } },
+          { sku: { [Op.like]: `%${search}%` } },
+          { description: { [Op.like]: `%${search}%` } },
+        ],
+      });
+    }
+
+    // Size filter (match size text within the product name)
+    if (size) {
+      const normalizedSize = size.toLowerCase();
+      andConditions.push(
+        sequelize.where(
+          sequelize.fn("LOWER", sequelize.col("name")),
+          {
+            [Op.like]: `%${normalizedSize}%`,
+          }
+        )
+      );
     }
 
     // Category filter
     if (category) {
-      whereClause.categories = {
-        [Op.contains]: [category],
-      };
+      const dialect = "mysql";
+
+      if (dialect === "mysql" || dialect === "mariadb") {
+        andConditions.push(
+          sequelize.where(
+            sequelize.fn(
+              "JSON_CONTAINS",
+              sequelize.col("categories"),
+              JSON.stringify(category)
+            ),
+            1
+          )
+        );
+      } else {
+        andConditions.push({
+          categories: {
+            [Op.contains]: [category],
+          },
+        });
+      }
     }
 
     // Price range filter
     if (minPrice || maxPrice) {
-      whereClause.price = {};
+      const priceConditions: any = {};
       if (minPrice) {
-        whereClause.price[Op.gte] = parseFloat(minPrice);
+        priceConditions[Op.gte] = parseFloat(minPrice);
       }
       if (maxPrice) {
-        whereClause.price[Op.lte] = parseFloat(maxPrice);
+        priceConditions[Op.lte] = parseFloat(maxPrice);
       }
+      andConditions.push({ price: priceConditions });
     }
 
     // Pagination
@@ -66,12 +103,36 @@ export const getProducts = async (req: JwtPayload, res: Response) => {
     const validSortFields = ["name", "price", "createdAt", "updatedAt", "sku"];
     const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
 
+    // Determine sorting based on `sort` shortcut values
+    let order: [string, "ASC" | "DESC"][] = [[sortField, sortOrder]];
+
+    if (sort) {
+      switch (sort) {
+        case "price_asc":
+          order = [["price", "ASC"]];
+          break;
+        case "price_desc":
+          order = [["price", "DESC"]];
+          break;
+        case "oldest":
+          order = [["createdAt", "ASC"]];
+          break;
+        case "newest":
+          order = [["createdAt", "DESC"]];
+          break;
+        default:
+          break;
+      }
+    }
+
+    const whereClause = andConditions.length ? { [Op.and]: andConditions } : undefined;
+
     // Get products with pagination and filtering
     const { count, rows: products } = await Products.findAndCountAll({
       where: whereClause,
       limit: limitNum,
       offset: offset,
-      order: [[sortField, sortOrder]],
+      order,
     });
 
     // Parse JSON strings to objects for each product
