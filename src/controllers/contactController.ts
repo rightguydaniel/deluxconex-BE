@@ -2,8 +2,7 @@ import { Request, Response } from "express";
 import { sendEmail } from "../configs/email/emailConfig";
 import sendResponse from "../utils/sendResponse";
 
-const CONTACT_RECIPIENT =
-  process.env.CONTACT_RECIPIENT || "admin@deluxconex.com";
+const CONTACT_RECIPIENT = "admin@deluxconex.com";
 
 const normalizeField = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";
