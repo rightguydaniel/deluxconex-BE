@@ -39,6 +39,10 @@ import {
   updateAdminUserPaymentMethod,
   updateAdminUserRole,
 } from "../controllers/admin/userManagement";
+import {
+  issueWirePaymentDetails,
+  listPaymentRequests,
+} from "../controllers/wirePaymentController";
 
 const adminRoutes = express.Router();
 adminRoutes.post("/products", upload.any(), createProduct);
@@ -103,6 +107,13 @@ adminRoutes.patch(
 adminRoutes.delete(
   "/users/:id/payment-methods/:paymentMethodId",
   deleteAdminUserPaymentMethod
+);
+
+// Wire payment requests
+adminRoutes.get("/payment-requests", listPaymentRequests);
+adminRoutes.post(
+  "/payment-requests/:id/issue",
+  issueWirePaymentDetails
 );
 
 export default adminRoutes;

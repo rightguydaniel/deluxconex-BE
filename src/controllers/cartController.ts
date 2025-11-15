@@ -89,6 +89,7 @@ export const addToCart = async (req: JwtPayload, res: Response) => {
     const existingItemIndex = currentItems.findIndex(
       (i: CartItem) =>
         i.productId === item.productId &&
+        i.selectedColor === item.selectedColor &&
         i.selectedDimension?.dimension === item.selectedDimension?.dimension &&
         i.selectedCondition?.condition === item.selectedCondition?.condition &&
         i.selectedDelivery?.method === item.selectedDelivery?.method
@@ -168,6 +169,7 @@ export const updateCartItem = async (req: JwtPayload, res: Response) => {
     const itemIndex = currentItems.findIndex(
       (item: CartItem) =>
         item.productId === updatedItem.productId &&
+        item.selectedColor === updatedItem.selectedColor &&
         item.selectedDimension?.dimension ===
           updatedItem.selectedDimension?.dimension &&
         item.selectedCondition?.condition ===
@@ -247,6 +249,7 @@ export const removeFromCart = async (req: JwtPayload, res: Response) => {
       (item: CartItem) =>
         !(
           item.productId === productId &&
+          item.selectedColor === itemToRemove.selectedColor &&
           item.selectedDimension?.dimension ===
             itemToRemove.selectedDimension?.dimension &&
           item.selectedCondition?.condition ===

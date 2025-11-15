@@ -38,6 +38,7 @@ export interface ProductsAttributes {
   specifications: (string | ProductSpec)[];
   images: string[];
   categories?: string[];
+  colors?: string[];
   dimensions?: Dimension[];
   delivery?: DeliveryOption[];
 }
@@ -81,6 +82,11 @@ Products.init(
       defaultValue: [],
     },
     categories: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+    },
+    colors: {
       type: DataTypes.JSON,
       allowNull: true,
       defaultValue: [],

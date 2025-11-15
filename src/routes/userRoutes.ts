@@ -45,6 +45,12 @@ import {
   createStripeCheckoutSession,
   stripeWebhook,
 } from "../controllers/stripeControllers";
+import {
+  getWirePaymentInfo,
+  requestWirePayment,
+  uploadWirePaymentProof,
+} from "../controllers/wirePaymentController";
+import { uploadPaymentProof } from "../configs/uploadPaymentProof";
 const userRoutes = express.Router();
 userRoutes.post("/register", register);
 userRoutes.post("/login", login);
@@ -81,6 +87,15 @@ userRoutes.post(
   createStripeCheckoutSession
 );
 userRoutes.post("/checkout/stripe/confirm", confirmStripeCheckout);
+
+// Wire transfer checkout
+userRoutes.post("/checkout/wire/request", userAuth, requestWirePayment);
+userRoutes.get("/checkout/wire/info", getWirePaymentInfo);
+userRoutes.post(
+  "/checkout/wire/proof",
+  uploadPaymentProof.single("proof"),
+  uploadWirePaymentProof
+);
 
 // Order routes
 userRoutes.get("/orders", userAuth, getOrders);

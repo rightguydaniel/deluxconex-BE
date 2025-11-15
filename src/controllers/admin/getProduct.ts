@@ -150,6 +150,10 @@ export const getProducts = async (req: JwtPayload, res: Response) => {
         typeof product.categories === "string"
           ? JSON.parse(product.categories)
           : product.categories,
+      colors:
+        typeof (product as any).colors === "string"
+          ? JSON.parse((product as any).colors as any)
+          : (product as any).colors,
       dimensions:
         typeof product.dimensions === "string"
           ? JSON.parse(product.dimensions)
@@ -221,6 +225,10 @@ export const getProductById = async (req: JwtPayload, res: Response) => {
         typeof product.categories === "string"
           ? JSON.parse(product.categories)
           : product.categories,
+      colors:
+        typeof (product as any).colors === "string"
+          ? JSON.parse((product as any).colors as any)
+          : (product as any).colors,
       dimensions:
         typeof product.dimensions === "string"
           ? JSON.parse(product.dimensions)
@@ -298,6 +306,10 @@ export const getProductsByCategory = async (req: JwtPayload, res: Response) => {
         typeof product.categories === "string"
           ? JSON.parse(product.categories)
           : product.categories,
+      colors:
+        typeof (product as any).colors === "string"
+          ? JSON.parse((product as any).colors as any)
+          : (product as any).colors,
       dimensions:
         typeof product.dimensions === "string"
           ? JSON.parse(product.dimensions)

@@ -7,6 +7,7 @@ interface OrderItem {
   name: string;
   price: number;
   quantity: number;
+  selectedColor?: string;
   dimension?: string;
   deliveryMethod: string;
   deliveryPrice: number;

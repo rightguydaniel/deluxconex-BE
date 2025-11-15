@@ -317,6 +317,7 @@ export const updateAdminUserCartItem = async (req: Request, res: Response) => {
       selectedDimension,
       selectedCondition,
       selectedDelivery,
+      selectedColor,
       quantity,
     } = req.body as Partial<CartItem> & { quantity: number };
 
@@ -331,11 +332,13 @@ export const updateAdminUserCartItem = async (req: Request, res: Response) => {
 
     const items = sanitizeCartItems(cart.get("items"));
 
-    const index = items.findIndex((item) =>
-      item.productId === productId &&
-      item.selectedDimension?.dimension === selectedDimension?.dimension &&
-      item.selectedCondition?.condition === selectedCondition?.condition &&
-      item.selectedDelivery?.method === selectedDelivery?.method
+    const index = items.findIndex(
+      (item) =>
+        item.productId === productId &&
+        item.selectedColor === selectedColor &&
+        item.selectedDimension?.dimension === selectedDimension?.dimension &&
+        item.selectedCondition?.condition === selectedCondition?.condition &&
+        item.selectedDelivery?.method === selectedDelivery?.method
     );
 
     if (index === -1) {
@@ -383,6 +386,7 @@ export const removeAdminUserCartItem = async (req: Request, res: Response) => {
       (existing) =>
         !(
           existing.productId === item.productId &&
+          existing.selectedColor === item.selectedColor &&
           existing.selectedDimension?.dimension ===
             item.selectedDimension?.dimension &&
           existing.selectedCondition?.condition ===

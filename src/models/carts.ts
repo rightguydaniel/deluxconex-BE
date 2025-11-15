@@ -9,6 +9,7 @@ export interface CartItem {
   basePrice: number; // The base price from the product
   quantity: number;
   image: string; // Main product image or selected variant image
+  selectedColor?: string;
   selectedDimension?: {
     dimension: string;
     priceAdjustment?: number; // Price difference from base price
