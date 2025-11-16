@@ -36,7 +36,15 @@ export const requestWirePayment = async (req: Request, res: Response) => {
     }
 
     const cartRow: any = await Carts.findOne({ where: { userId } });
-    if (!cartRow || !cartRow.items?.length) {
+    if (!cartRow) {
+      return sendResponse(res, 400, "Cart is empty");
+    }
+    const rawCart = cartRow.get({ plain: true });
+    const items =
+      typeof rawCart.items === "string"
+        ? JSON.parse(rawCart.items)
+        : rawCart.items;
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return sendResponse(res, 400, "Cart is empty");
     }
 
@@ -46,11 +54,6 @@ export const requestWirePayment = async (req: Request, res: Response) => {
     if (!address) {
       return sendResponse(res, 200, "address required");
     }
-
-    const cart =
-      typeof cartRow.items === "string"
-        ? { ...cartRow, items: JSON.parse(cartRow.items) }
-        : { ...cartRow, items: cartRow.items };
 
     const orderId = uuidv4();
     const invoiceId = uuidv4();
@@ -70,7 +73,7 @@ export const requestWirePayment = async (req: Request, res: Response) => {
         {
           id: orderId,
           userId,
-          items: cart.items.map((item: any) => ({
+          items: items.map((item: any) => ({
             productId: item.productId,
             name: item.name,
             price: item.itemPrice,
@@ -80,10 +83,10 @@ export const requestWirePayment = async (req: Request, res: Response) => {
             deliveryPrice: item.selectedDelivery?.price || 0,
             image: item.image,
           })),
-          subtotal: cart.subtotal,
-          shipping: cart.shipping ?? 0,
-          tax: cart.tax ?? 0,
-          total: cart.total,
+          subtotal: rawCart.subtotal,
+          shipping: rawCart.shipping ?? 0,
+          tax: rawCart.tax ?? 0,
+          total: rawCart.total,
           status: OrderStatus.PENDING,
           shippingAddress,
           paymentMethod: "wire",
@@ -101,11 +104,11 @@ export const requestWirePayment = async (req: Request, res: Response) => {
           issueDate: new Date(),
           dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           status: InvoiceStatus.DRAFT,
-          subtotal: cart.subtotal,
-          tax: cart.tax ?? 0,
-          shipping: cart.shipping ?? 0,
+          subtotal: rawCart.subtotal,
+          tax: rawCart.tax ?? 0,
+          shipping: rawCart.shipping ?? 0,
           discount: 0,
-          total: cart.total,
+          total: rawCart.total,
           notes: "Wire transfer requested",
           terms: "Payment due within 30 days or as specified.",
         },
@@ -484,4 +487,3 @@ export const uploadWirePaymentProof = async (req: Request, res: Response) => {
     );
   }
 };
-
