@@ -19,6 +19,7 @@ const APP_BASE_URL = (process.env.APP_URL || "https://deluxconex.com").replace(
   /\/+$/,
   ""
 );
+const API_BASE_URL = (process.env.API_URL || APP_BASE_URL).replace(/\/+$/, "");
 
 function getPaymentProofDir() {
   const uploadDir = path.join(process.cwd(), "public", "uploads", "payments");
@@ -163,6 +164,36 @@ export const requestWirePayment = async (req: Request, res: Response) => {
         "Wire transfer request received",
         undefined,
         html
+      );
+    }
+
+    // Notify admin that a wire payment request was created
+    try {
+      const adminHtml = `
+        <div style="font-family: Arial, sans-serif; padding:16px;">
+          <h2>New wire transfer payment request</h2>
+          <p>
+            A customer has requested to pay via wire transfer.<br/>
+            User ID: ${user?.id || ""}<br/>
+            Order ID: ${orderId}<br/>
+            Invoice ID: ${invoiceId}
+          </p>
+          <p>
+            Please log into the admin dashboard and review the request under
+            <strong>Payment Requests</strong> to issue wire transfer details.
+          </p>
+        </div>
+      `;
+      await sendEmail(
+        "admin@deluxconex.com",
+        "New wire transfer payment request",
+        undefined,
+        adminHtml
+      );
+    } catch (notifyError) {
+      console.error(
+        "Failed to send admin notification for wire payment request:",
+        notifyError
       );
     }
 
@@ -386,7 +417,7 @@ export const uploadWirePaymentProof = async (req: Request, res: Response) => {
         .slice(2, 8)}${ext}`;
       const absPath = path.join(dir, filename);
       fs.writeFileSync(absPath, file.buffer);
-      proofUrl = `${APP_BASE_URL}/uploads/payments/${filename}`;
+      proofUrl = `${API_BASE_URL}/uploads/payments/${filename}`;
     }
 
     const requestRow: any = await PaymentRequests.findByPk(payload.requestId);
@@ -482,6 +513,111 @@ export const uploadWirePaymentProof = async (req: Request, res: Response) => {
       res,
       500,
       "Failed to submit payment proof",
+      null,
+      error.message
+    );
+  }
+};
+
+export const approveWirePaymentRequest = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+
+    const requestRow: any = await PaymentRequests.findByPk(id);
+    if (!requestRow) {
+      return sendResponse(res, 404, "Payment request not found");
+    }
+
+    const invoice: any = await Invoices.findByPk(requestRow.invoiceId);
+    const order: any = await Orders.findByPk(requestRow.orderId);
+    const user: any = await Users.findByPk(requestRow.userId);
+
+    if (!invoice || !order) {
+      return sendResponse(
+        res,
+        400,
+        "Unable to load associated invoice or order"
+      );
+    }
+
+    await database.transaction(async (t) => {
+      await requestRow.update(
+        { status: WirePaymentStatus.VERIFIED },
+        { transaction: t }
+      );
+
+      await invoice.update(
+        {
+          status: InvoiceStatus.PAID,
+          paidAt: new Date(),
+        } as any,
+        { transaction: t }
+      );
+
+      await order.update(
+        {
+          paymentStatus: "paid",
+          status: OrderStatus.PROCESSING,
+          paymentMethod: "wire",
+          paymentProvider: "wire",
+          paymentRef: order.paymentRef || `wire-${Date.now()}`,
+        } as any,
+        { transaction: t }
+      );
+
+      if (requestRow.userId) {
+        await Carts.destroy({
+          where: { userId: requestRow.userId },
+          transaction: t,
+        });
+      }
+    });
+
+    if (user?.email) {
+      const html = `
+        <div style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 24px;">
+          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+            <div style="background:#071623;padding:16px 24px;">
+              <img src="${APP_BASE_URL}/src/assets/images/Deluxconex.png" alt="DeluxConex" style="height:40px;display:block;">
+            </div>
+            <div style="padding:24px;">
+              <h2 style="margin-top:0;color:#071623;">Wire payment approved</h2>
+              <p style="color:#444;">Hi ${
+                user.full_name || user.user_name || ""
+              },</p>
+              <p style="color:#444;line-height:1.6;">
+                Your wire transfer payment has been verified and your order is now being processed.
+              </p>
+              <p style="color:#444;line-height:1.6;">
+                If you have any questions, please contact
+                <a href="mailto:admin@deluxconex.com">admin@deluxconex.com</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      await sendEmail(
+        user.email,
+        "Wire transfer payment approved",
+        undefined,
+        html
+      );
+    }
+
+    return sendResponse(res, 200, "Wire payment approved", {
+      orderId: order.id,
+      invoiceId: invoice.id,
+    });
+  } catch (error: any) {
+    console.error("approveWirePaymentRequest error:", error);
+    return sendResponse(
+      res,
+      500,
+      "Failed to approve wire payment request",
       null,
       error.message
     );

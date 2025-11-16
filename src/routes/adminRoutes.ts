@@ -42,6 +42,7 @@ import {
 import {
   issueWirePaymentDetails,
   listPaymentRequests,
+  approveWirePaymentRequest,
 } from "../controllers/wirePaymentController";
 
 const adminRoutes = express.Router();
@@ -114,6 +115,10 @@ adminRoutes.get("/payment-requests", listPaymentRequests);
 adminRoutes.post(
   "/payment-requests/:id/issue",
   issueWirePaymentDetails
+);
+adminRoutes.post(
+  "/payment-requests/:id/approve",
+  approveWirePaymentRequest
 );
 
 export default adminRoutes;
